@@ -108,7 +108,7 @@ function MarketRowItem({
         state: { defaultCurrency: currency, defaultAccount },
       });
     },
-    [currency, allAccounts, history],
+    [currency, allAccounts, history, openAddAccounts],
   );
 
   const onStarClick = useCallback(
