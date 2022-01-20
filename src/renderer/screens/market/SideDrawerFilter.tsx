@@ -84,13 +84,6 @@ export default function SideDrawerFilter({
               </Label>
             </Flex>
           </Flex>
-          <Flex flex="1" />
-          <Divider />
-          <Flex flexDirection="row" justifyContent="flex-end" px={4} py={2} alignItems="center">
-            <Button variant="main" big onClick={closeDrawer}>
-              {t("market.filters.applyFilters")}
-            </Button>
-          </Flex>
         </Flex>
       </SideDrawer>
     </>

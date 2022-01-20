@@ -56,16 +56,18 @@ function MarketRowItem({
   const dispatch = useDispatch();
   const accounts = useSelector(accountsSelector);
   const currencyAccounts = accounts.filter(
-    a => getAccountCurrency(a) === currency.internalCurrency,
+    a => currency && getAccountCurrency(a) === currency.internalCurrency,
   );
 
   const openAddAccounts = useCallback(() => {
-    dispatch(
-      openModal("MODAL_ADD_ACCOUNTS", {
-        currency: currency.internalCurrency,
-        preventSkippingCurrencySelection: true,
-      }),
-    );
+    if (currency) {
+      dispatch(
+        openModal("MODAL_ADD_ACCOUNTS", {
+          currency: currency.internalCurrency,
+          preventSkippingCurrencySelection: true,
+        }),
+      );
+    }
   }, [dispatch, currency]);
 
   const history = useHistory();
