@@ -2,7 +2,6 @@ import React, { useCallback, memo } from "react";
 import { useHistory } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { accountsSelector } from "~/renderer/reducers/accounts";
-import { getAccountCurrency } from "@ledgerhq/live-common/lib/account";
 import styled, { useTheme } from "styled-components";
 import { Flex, Text, Icon } from "@ledgerhq/react-ui";
 import FormattedVal from "~/renderer/components/FormattedVal";
@@ -15,6 +14,7 @@ import { CurrencyData } from "./types";
 import { Button } from ".";
 import { useTranslation } from "react-i18next";
 import { openModal } from "~/renderer/actions/modals";
+import { getAvailableAccountsById } from "@ledgerhq/live-common/lib/exchange/swap/utils";
 
 const CryptoCurrencyIconWrapper = styled.div`
   height: 32px;
@@ -54,10 +54,6 @@ function MarketRowItem({
 }: Props) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const accounts = useSelector(accountsSelector);
-  const currencyAccounts = accounts.filter(
-    a => getAccountCurrency(a) === currency.internalCurrency,
-  );
 
   const openAddAccounts = useCallback(() => {
     dispatch(
@@ -71,6 +67,7 @@ function MarketRowItem({
   const history = useHistory();
   const { colors } = useTheme();
   const graphColor = currency?.priceChangePercentage < 0 ? colors.error.c60 : colors.success.c60;
+  const allAccounts = useSelector(accountsSelector);
 
   const onCurrencyClick = useCallback(() => {
     selectCurrency(currency.id);
@@ -101,18 +98,17 @@ function MarketRowItem({
       e.preventDefault();
       e.stopPropagation();
       setTrackingSource("market page");
-      if (currencyAccounts.length > 0) {
-        history.push({
-          pathname: "/swap",
-          state: {
-            defaultCurrency: currency.internalCurrency,
-          },
-        });
-      } else {
-        openAddAccounts();
-      }
+
+      const defaultAccount = getAvailableAccountsById(currency.id, allAccounts).find(Boolean);
+
+      if (!defaultAccount) return openAddAccounts();
+
+      history.push({
+        pathname: "/swap",
+        state: { defaultCurrency: currency, defaultAccount },
+      });
     },
-    [currency, currencyAccounts, history],
+    [currency, allAccounts, history],
   );
 
   const onStarClick = useCallback(
