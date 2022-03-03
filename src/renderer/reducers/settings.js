@@ -109,6 +109,7 @@ export type SettingsState = {
   enablePlatformDevTools: boolean,
   catalogProvider: string,
   USBTroubleshootingIndex?: number,
+  enableLearnPageStagingUrl?: boolean,
   swap: {
     hasAcceptedIPSharing: false,
     selectableCurrencies: string[],
@@ -184,6 +185,7 @@ const INITIAL_STATE: SettingsState = {
   allowExperimentalApps: false,
   enablePlatformDevTools: false,
   catalogProvider: "production",
+  enableLearnPageStagingUrl: false,
   USBTroubleshootingIndex: undefined,
   swap: {
     hasAcceptedIPSharing: false,
@@ -275,7 +277,7 @@ const handlers: Object = {
     { payload }: { payload: { lastSeenDevice: DeviceModelInfo, latestFirmware: any } },
   ) => ({
     ...state,
-    lastSeenDevice: payload.lastSeenDevice,
+    lastSeenDevice: Object.assign({}, state.lastSeenDevice, payload.lastSeenDevice),
     latestFirmware: payload.latestFirmware,
   }),
   SET_DEEPLINK_URL: (state: SettingsState, { payload: deepLinkUrl }) => ({
@@ -366,7 +368,10 @@ export const developerModeSelector = (state: State): boolean => state.settings.d
 
 export const lastUsedVersionSelector = (state: State): string => state.settings.lastUsedVersion;
 
-export const userThemeSelector = (state: State): ?string => state.settings.theme;
+export const userThemeSelector = (state: State): ?string => {
+  const savedVal = state.settings.theme;
+  return ["dark", "light"].includes(savedVal) ? savedVal : "dark";
+};
 
 type LanguageAndUseSystemLanguage = {
   language: string,
@@ -479,6 +484,9 @@ export const allowExperimentalAppsSelector = (state: State) => state.settings.al
 export const enablePlatformDevToolsSelector = (state: State) =>
   state.settings.enablePlatformDevTools;
 export const catalogProviderSelector = (state: State) => state.settings.catalogProvider;
+
+export const enableLearnPageStagingUrlSelector = (state: State) =>
+  state.settings.enableLearnPageStagingUrl;
 
 export const blacklistedTokenIdsSelector = (state: State) => state.settings.blacklistedTokenIds;
 export const hasCompletedOnboardingSelector = (state: State) =>

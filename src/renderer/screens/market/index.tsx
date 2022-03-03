@@ -3,13 +3,13 @@ import { Flex, Button as BaseButton, Text, SearchInput } from "@ledgerhq/react-u
 import { useSelector } from "react-redux";
 import { starredMarketCoinsSelector } from "~/renderer/reducers/settings";
 import { useTranslation } from "react-i18next";
-import { useMarketData } from "./MarketDataProvider";
+import { useMarketData } from "@ledgerhq/live-common/lib/market/MarketDataProvider";
 import styled from "styled-components";
 import CounterValueSelect from "./CountervalueSelect";
 import MarketList from "./MarketList";
-import SideDrawerFilter from "./SideDrawerFilter";
 import Dropdown from "./DropDown";
-import { rangeDataTable } from "./utils/rangeDataTable";
+import { rangeDataTable } from "@ledgerhq/live-common/lib/market/utils/rangeDataTable";
+import Track from "~/renderer/analytics/Track";
 
 const Container = styled(Flex).attrs({
   flex: "1",
@@ -27,7 +27,6 @@ const SearchContainer = styled(Flex).attrs({ flex: "0.8" })`
   }
 `;
 
-// @ts-expect-error typing issue
 export const Button = styled(BaseButton)<{ big?: boolean }>`
   border-radius: 44px;
 
@@ -61,7 +60,7 @@ export default function Market() {
     setCounterCurrency,
     supportedCounterCurrencies,
   } = useMarketData();
-  const { search = "", range, starred = [], liveCompatible } = requestParams;
+  const { search = "", range, starred = [], liveCompatible, order } = requestParams;
   const starredMarketCoins: string[] = useSelector(starredMarketCoinsSelector);
   const starFilterOn = starred.length > 0;
 
@@ -86,12 +85,11 @@ export default function Market() {
     }
   }, [refresh, starFilterOn, starredMarketCoins]);
 
-  const toggleLiveCompatible = useCallback(() => {
-    refresh({ liveCompatible: !liveCompatible });
-  }, [liveCompatible, refresh]);
-
   const timeRanges = useMemo(
-    () => Object.keys(rangeDataTable).map(value => ({ value, label: t(`market.range.${value}`) })),
+    () =>
+      Object.keys(rangeDataTable)
+        .filter(k => k !== "1h")
+        .map(value => ({ value, label: t(`market.range.${value}`) })),
     [t],
   );
 
@@ -99,6 +97,14 @@ export default function Market() {
 
   return (
     <Container>
+      <Track
+        event="Page Market"
+        onMount
+        onUpdate
+        sort={order !== "desc"}
+        timeframe={range}
+        countervalue={counterCurrency}
+      />
       <Title>{t("market.title")}</Title>
       <Flex flexDirection="row" pr="6px" my={2} alignItems="center" justifyContent="space-between">
         <SearchContainer>
@@ -122,21 +128,6 @@ export default function Market() {
               searchable={false}
             />
           </Flex>
-          <SideDrawerFilter
-            refresh={refresh}
-            filters={{
-              starred: {
-                toggle: toggleFilterByStarredAccounts,
-                value: starFilterOn,
-                disabled: !starredMarketCoins?.length,
-              },
-              liveCompatible: {
-                toggle: toggleLiveCompatible,
-                value: liveCompatible,
-              },
-            }}
-            t={t}
-          />
         </Flex>
       </Flex>
       <MarketList

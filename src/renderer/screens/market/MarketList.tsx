@@ -1,5 +1,8 @@
-import React, { useCallback, memo } from "react";
-import { MarketDataContextType, useMarketData } from "./MarketDataProvider";
+import React, { useCallback, useEffect, useState, memo } from "react";
+import {
+  MarketDataContextType,
+  useMarketData,
+} from "@ledgerhq/live-common/lib/market/MarketDataProvider";
 import styled from "styled-components";
 import { Flex, Text, Icon } from "@ledgerhq/react-ui";
 import { Trans, useTranslation } from "react-i18next";
@@ -15,6 +18,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { localeSelector } from "~/renderer/reducers/settings";
 import { addStarredMarketCoins, removeStarredMarketCoins } from "~/renderer/actions/settings";
 import { useProviders } from "../exchange/Swap2/Form";
+import Track from "~/renderer/analytics/Track";
 
 type Props = {
   data: MarketDataContextType;
@@ -26,6 +30,7 @@ export const TableCellBase = styled(Flex).attrs({
 })`
   padding-left: 5px;
   padding-right: 5px;
+  cursor: ${p => (p.disabled ? "default" : "pointer")};
 `;
 
 export const TableCell = ({
@@ -33,8 +38,9 @@ export const TableCell = ({
   children,
   ...props
 }: {
+  disabled?: boolean;
   loading?: boolean;
-  onClick?: () => void;
+  onClick?: (e: any) => void;
   children?: React.ReactNode;
 }) => (
   <TableCellBase {...props}>
@@ -55,7 +61,8 @@ const ChevronContainer = styled(Flex).attrs({ m: 1 })<{
   }
 `;
 
-export const miniChartThreshold = 1050;
+export const miniChartThreshold = 1150;
+export const miniMarketCapThreshold = 1050;
 
 export const SortTableCell = ({
   onClick,
@@ -120,16 +127,22 @@ export const TableRow = styled(Flex).attrs({
     padding-left: 5px;
   }
   ${TableCellBase}:nth-child(2) {
-    flex: 1 0 150px;
+    flex: 1 0 250px;
     justify-content: flex-start;
   }
   ${TableCellBase}:nth-child(3) {
     flex: 1 0 150px;
     justify-content: flex-end;
   }
-  ${TableCellBase}:nth-child(4),
-  ${TableCellBase}:nth-child(5) {
+  ${TableCellBase}:nth-child(4) {
     flex: 1 0 100px;
+    justify-content: flex-end;
+  }
+  ${TableCellBase}:nth-child(5) {
+    @media (min-width: ${miniMarketCapThreshold}px) {
+      flex: 1 0 150px;
+    }
+    flex: 1 0 70px;
     justify-content: flex-end;
   }
   ${TableCellBase}:nth-child(6) {
@@ -156,6 +169,7 @@ const NoCryptoPlaceholder = ({ requestParams, t, resetSearch }: any) => (
     width="400px"
     flexDirection="column"
   >
+    <Track event="Page Market Search" success={false} />
     <Flex justifyContent="center" alignItems="center">
       <NoCryptoFound size={75} />
     </Flex>
@@ -191,6 +205,8 @@ const CurrencyRow = memo(function CurrencyRowItem({
   locale,
   swapAvailableIds,
   style,
+  displayChart,
+  displayMarketCap,
 }: any) {
   const currency = data ? data[index] : null;
   const isStarred = currency && starredMarketCoins.includes(currency.id);
@@ -209,6 +225,8 @@ const CurrencyRow = memo(function CurrencyRowItem({
       availableOnBuy={availableOnBuy}
       availableOnSwap={availableOnSwap}
       style={{ ...style }}
+      displayChart={displayChart}
+      displayMarketCap={displayMarketCap}
     />
   );
 });
@@ -242,7 +260,7 @@ function MarketList({
   } = useMarketData();
   const dispatch = useDispatch();
 
-  const { orderBy, order, starred } = requestParams;
+  const { orderBy, order, starred, search } = requestParams;
   const currenciesLength = marketData.length;
   const freshLoading = loading && !currenciesLength;
 
@@ -277,12 +295,23 @@ function MarketList({
   const isItemLoaded = useCallback((index: number) => !!marketData[index], [marketData]);
   const itemCount = endOfList ? currenciesLength : currenciesLength + 1;
 
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleWindowResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, []);
+
   return (
     <Flex flex="1" flexDirection="column">
       {!currenciesLength && !loading ? (
         <NoCryptoPlaceholder requestParams={requestParams} t={t} resetSearch={resetSearch} />
       ) : (
         <>
+          {search && currenciesLength > 0 && (
+            <Track event="Page Market Search" onMount success={true} />
+          )}
           <TableRow header>
             <SortTableCell
               onClick={toggleSortBy}
@@ -292,12 +321,19 @@ function MarketList({
             >
               #
             </SortTableCell>
-            <TableCell>{t("market.marketList.crypto")}</TableCell>
-            <TableCell>{t("market.marketList.price")}</TableCell>
-            <TableCell>{t("market.marketList.change")}</TableCell>
-            <TableCell>{t("market.marketList.marketCap")}</TableCell>
-            <TableCell>{t("market.marketList.last7d")}</TableCell>
-            <TableCell onClick={toggleStarredAccounts}>
+            <TableCell disabled>{t("market.marketList.crypto")}</TableCell>
+            <TableCell disabled>{t("market.marketList.price")}</TableCell>
+            <TableCell disabled>{t("market.marketList.change")}</TableCell>
+            {width > miniMarketCapThreshold && (
+              <TableCell disabled>{t("market.marketList.marketCap")}</TableCell>
+            )}
+            {width > miniChartThreshold && (
+              <TableCell disabled>{t("market.marketList.last7d")}</TableCell>
+            )}
+            <TableCell
+              disabled={starredMarketCoins.length <= 0 && starred.length <= 0}
+              onClick={toggleStarredAccounts}
+            >
               <Icon name={starred && starred.length > 0 ? "StarSolid" : "Star"} size={18} />
             </TableCell>
           </TableRow>
@@ -354,6 +390,8 @@ function MarketList({
                             starredMarketCoins={starredMarketCoins}
                             locale={locale}
                             swapAvailableIds={swapAvailableIds}
+                            displayChart={width > miniChartThreshold}
+                            displayMarketCap={width > miniMarketCapThreshold}
                           />
                         )}
                       </List>

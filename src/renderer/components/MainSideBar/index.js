@@ -7,6 +7,8 @@ import { Transition } from "react-transition-group";
 import styled from "styled-components";
 import { useManagerBlueDot } from "@ledgerhq/live-common/lib/manager/hooks";
 import { usePlatformApp } from "@ledgerhq/live-common/lib/platform/PlatformAppProvider";
+import { FeatureToggle } from "@ledgerhq/live-common/lib/featureFlags";
+import { Icons } from "@ledgerhq/react-ui";
 
 import {
   accountsSelector,
@@ -131,6 +133,12 @@ const Separator = styled(Box).attrs(() => ({
   background: ${p => p.theme.colors.palette.divider};
 `;
 
+const StarredAcountList = styled.div`
+  @media (max-height: 800px) {
+    display: none;
+  }
+`;
+
 const sideBarTransitionStyles = {
   entering: { flexBasis: MAIN_SIDEBAR_WIDTH },
   entered: { flexBasis: MAIN_SIDEBAR_WIDTH },
@@ -225,6 +233,10 @@ const MainSideBar = () => {
     push("/card");
   }, [push]);
 
+  const handleClickLearn = useCallback(() => {
+    push("/learn");
+  }, [push]);
+
   const handleClickDashboard = useCallback(() => {
     push("/");
   }, [push]);
@@ -307,24 +319,33 @@ const MainSideBar = () => {
                 NotifComponent={<UpdateDot collapsed={collapsed} />}
                 collapsed={secondAnim}
               />
-              {process.env.NODE_ENV !== "production" && !process.env.PLAYWRIGHT_RUN ? (
+              <SideBarListItem
+                id={"market"}
+                label={t("sidebar.market")}
+                icon={IconMarket}
+                iconActiveColor="wallet"
+                onClick={handleClickMarket}
+                isActive={location.pathname === "/market"}
+                collapsed={secondAnim}
+              />
+              <FeatureToggle feature="learn">
                 <SideBarListItem
-                  id={"market"}
-                  label={t("sidebar.market")}
-                  icon={IconMarket}
+                  id="learn"
+                  label={t("sidebar.learn")}
+                  icon={Icons.GraduationMedium}
+                  iconSize={20}
                   iconActiveColor="wallet"
-                  onClick={handleClickMarket}
-                  isActive={location.pathname === "/market"}
+                  isActive={location.pathname.startsWith("/learn")}
+                  onClick={handleClickLearn}
                   collapsed={secondAnim}
                 />
-              ) : null}
-
+              </FeatureToggle>
               <SideBarListItem
                 id={"accounts"}
                 label={t("sidebar.accounts")}
                 icon={IconWallet}
                 iconActiveColor="wallet"
-                isActive={location.pathname === "/accounts"}
+                isActive={location.pathname.startsWith("/account")}
                 onClick={handleClickAccounts}
                 disabled={noAccounts}
                 collapsed={secondAnim}
@@ -411,14 +432,17 @@ const MainSideBar = () => {
               />
               <Space of={30} />
             </SideBarList>
-            <Space grow of={30} />
-            <Hide visible={secondAnim && hasStarredAccounts} mb={"-8px"}>
-              <Separator />
-            </Hide>
+            <StarredAcountList>
+              <Space grow of={30} />
 
-            <SideBarList scroll flex="1 1 40%" title={t("sidebar.stars")} collapsed={secondAnim}>
-              <Stars pathname={location.pathname} collapsed={secondAnim} />
-            </SideBarList>
+              <Hide visible={secondAnim && hasStarredAccounts} mb={"-8px"}>
+                <Separator />
+              </Hide>
+
+              <SideBarList scroll flex="1 1 40%" title={t("sidebar.stars")} collapsed={secondAnim}>
+                <Stars pathname={location.pathname} collapsed={secondAnim} />
+              </SideBarList>
+            </StarredAcountList>
             <Space of={30} grow />
             <TagContainer collapsed={!secondAnim} />
           </SideBar>

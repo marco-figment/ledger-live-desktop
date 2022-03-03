@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
 import { Redirect, Route, Switch, useLocation } from "react-router-dom";
+import { FeatureToggle } from "@ledgerhq/live-common/lib/featureFlags";
 import TrackAppStart from "~/renderer/components/TrackAppStart";
 import { BridgeSyncProvider } from "~/renderer/bridge/BridgeSyncContext";
 import { SyncNewAccounts } from "~/renderer/bridge/SyncNewAccounts";
@@ -57,6 +58,8 @@ import FirmwareUpdateBanner from "~/renderer/components/FirmwareUpdateBanner";
 import Market from "~/renderer/screens/market";
 // $FlowFixMe
 import MarketCoinScreen from "~/renderer/screens/market/MarketCoinScreen";
+// $FlowFixMe
+import Learn from "~/renderer/screens/learn";
 
 export const TopBannerContainer: ThemedComponent<{}> = styled.div`
   position: sticky;
@@ -208,15 +211,15 @@ export default function Default() {
                           path="/USBTroubleshooting"
                           render={props => <USBTroubleshooting {...props} />}
                         />
-                        {process.env.NODE_ENV !== "production" && !process.env.SPECTRON_RUN ? (
-                          <>
-                            <Route
-                              path="/market/:currencyId"
-                              render={props => <MarketCoinScreen {...props} />}
-                            />
-                            <Route path="/market" render={props => <Market {...props} />} />
-                          </>
-                        ) : null}
+
+                        <Route
+                          path="/market/:currencyId"
+                          render={props => <MarketCoinScreen {...props} />}
+                        />
+                        <Route path="/market" render={props => <Market {...props} />} />
+                        <FeatureToggle feature="learn">
+                          <Route path="/learn" render={props => <Learn {...props} />} />
+                        </FeatureToggle>
                       </Switch>
                     </Page>
                     <Drawer />
