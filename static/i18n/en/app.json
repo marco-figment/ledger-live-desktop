@@ -2289,17 +2289,6 @@
     }
   },
   "osmosis": {
-    "account": {
-      "subHeader": {
-        "cardTitle": "Powered by Osmosis",
-        "moreInfo": "More info",
-        "drawerTitle": "Osmosis integration",
-        "title": "The Osmosis (OSMO) token is now available on Ledger Live",
-        "description": "You can now start to manage your Osmosis (OSMO) tokens and secure them through Ledger Live.",
-        "description2": "Lorem Ipsum Dolorem",
-        "website": "Lorem Ipsum Dolorem"
-      }
-    },
     "memo": "Memo",
     "memoPlaceholder": "Optional",
     "memoWarningText": "When using a memo, carefully check the information with the recipient"
